@@ -1,0 +1,61 @@
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local remote = Instance.new("RemoteEvent")
+remote.Name = "ZIN_AutoKill"
+remote.Parent = ReplicatedStorage
+
+-- THAY BẰNG USER ID CỦA M
+local ADMINS = {
+    [123456789] = true
+}
+
+local cooldown = {}
+
+local function killPlayer(target)
+    local character = target.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid and humanoid.Health > 0 then
+        humanoid.Health = 0
+        return true
+    end
+
+    return false
+end
+
+remote.OnServerEvent:Connect(function(player, action, targetName)
+    if not ADMINS[player.UserId] then return end
+
+    local now = os.clock()
+    if cooldown[player.UserId] and now - cooldown[player.UserId] < 1 then
+        return
+    end
+    cooldown[player.UserId] = now
+
+    if action == "NameKill" then
+        if typeof(targetName) ~= "string" then return end
+        if #targetName < 1 or #targetName > 20 then return end
+
+        local target
+
+        for _, other in ipairs(Players:GetPlayers()) do
+            if other.Name:lower() == targetName:lower() then
+                target = other
+                break
+            end
+        end
+
+        if target and target ~= player then
+            killPlayer(target)
+        end
+
+    elseif action == "KillAll" then
+        for _, target in ipairs(Players:GetPlayers()) do
+            if target ~= player then
+                killPlayer(target)
+            end
+        end
+    end
+end)
